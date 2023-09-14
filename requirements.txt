@@ -3,7 +3,6 @@ charset-normalizer==3.2.0
 idna==3.4
 lastpy==1.0.8
 pysqlite3==0.5.1
-pysqlite3-binary==0.5.1
 python-dotenv==1.0.0
 requests==2.31.0
 urllib3==2.0.4

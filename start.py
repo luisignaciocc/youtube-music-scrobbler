@@ -130,7 +130,6 @@ class Process:
                 record["albumName"],
                 self.session
             )
-            print(resp)
             cursor.execute('''
                 INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at)
                 VALUES (:trackName, :artistName, :albumName, :ts)

@@ -7,3 +7,7 @@ services:
     restart: always
     stdin_open: true
     tty: true
+    volumes:
+      - ./data.db:/data.db
+      - ./oauth.json:/oauth.json
+      - ./.env:/.env
