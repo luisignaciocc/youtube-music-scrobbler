@@ -105,7 +105,8 @@ class Process:
                      ).strftime('%Y-%m-%d %H:%M:%S')
         for item in history:
             i += 1
-            print("Scrobbling " + str(i) + " songs of " + str(total))
+            if i % 50 == 0:
+                print("Scrobbling " + str(i) + " songs of " + str(total))
             record = {
                 "artistName": item["artists"][0]["name"],
                 "trackName": item["title"],
@@ -124,17 +125,27 @@ class Process:
                 }).fetchone()
             if scroble:
                 continue
-            resp = lastpy.scrobble(
+            xml_response = lastpy.scrobble(
                 record["trackName"],
                 record["artistName"],
                 record["albumName"],
                 self.session
             )
-            cursor.execute('''
-                INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at)
-                VALUES (:trackName, :artistName, :albumName, :ts)
-            ''', record)
-            self.conn.commit()
+            root = ET.fromstring(xml_response)
+            scrobbles = root.find('scrobbles')
+            accepted = scrobbles.get('accepted')
+            ignored = scrobbles.get('ignored')
+            if accepted == '0' and ignored == '1':
+                print("Error scrobbling " + record["trackName"] +
+                      " by " + record["artistName"] + ".")
+                print(xml_response)
+            else:
+                cursor.execute('''
+                    INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at)
+                    VALUES (:trackName, :artistName, :albumName, :ts)
+                ''', record)
+                self.conn.commit()
+
         cursor.close()
         self.conn.close()
 
