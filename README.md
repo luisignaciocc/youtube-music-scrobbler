@@ -20,10 +20,12 @@ ytmusicapi oauth
 
 And follow the instructions. This will create a file `oauth.json` in the current directory.
 
+After that, you must [create an API key for last.fm](https://www.last.fm/api/account/create) and create an `.env` file, filling the required information
+
 Then run:
 
 ```bash
-python index.py
+python start.py
 ```
 
 ## Contributing
