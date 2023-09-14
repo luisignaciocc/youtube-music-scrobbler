@@ -1,4 +1,4 @@
-name: ytmusic-api
+name: ytmusic-scrobbler
 channels:
   - defaults
 dependencies:
@@ -33,4 +33,3 @@ dependencies:
       - requests==2.31.0
       - urllib3==2.0.4
       - ytmusicapi==1.2.1
-prefix: /home/luisignaciocc/miniconda3/envs/ytmusic-api
