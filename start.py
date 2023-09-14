@@ -5,9 +5,9 @@ import webbrowser
 import threading
 import http.server
 import socketserver
-from dotenv import load_dotenv
 from ytmusicapi import YTMusic
 import xml.etree.ElementTree as ET
+from dotenv import load_dotenv, set_key
 from datetime import datetime, timedelta
 
 load_dotenv()
@@ -37,6 +37,10 @@ class TokenServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 class Process:
     def __init__(self):
         self.api_key = os.environ['LAST_FM_API']
+        try:
+            self.session = os.environ['LASTFM_SESSION']
+        except:
+            self.session = None
 
         current_datetime = datetime.now()
         yesterday_datetime = current_datetime - timedelta(days=1)
@@ -65,6 +69,7 @@ class Process:
         try:
             root = ET.fromstring(xml_response)
             token = root.find('session/key').text
+            set_key('.env', 'LASTFM_SESSION', token)
             return token
         except Exception as e:
             print(xml_response)
@@ -73,8 +78,9 @@ class Process:
     def execute(self):
         ytmusic = YTMusic("oauth.json")
 
-        token = self.get_token()
-        session = self.get_session(token)
+        if not self.session:
+            token = self.get_token()
+            self.session = self.get_session(token)
         print("Getting history...")
         history = ytmusic.get_history()
         total = len(history)
@@ -92,7 +98,7 @@ class Process:
                 record["trackName"],
                 record["artistName"],
                 record["albumName"],
-                session
+                self.session
             )
             print(resp)
 
