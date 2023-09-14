@@ -162,3 +162,4 @@ cython_debug/
 oauth.json
 watch-history.json
 .vscode/*
+data.db

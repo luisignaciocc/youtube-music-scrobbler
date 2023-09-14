@@ -1,6 +1,7 @@
 import os
 import time
 import lastpy
+import sqlite3
 import webbrowser
 import threading
 import http.server
@@ -46,6 +47,19 @@ class Process:
         yesterday_datetime = current_datetime - timedelta(days=1)
         self.formatted_date = yesterday_datetime.strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.conn = sqlite3.connect('./data.db')
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS scrobbles (
+                id INTEGER PRIMARY KEY,
+                track_name TEXT,
+                artist_name TEXT,
+                album_name TEXT,
+                scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        self.conn.commit()
+        cursor.close()
 
     def get_token(self):
         print("Waiting for authentication...")
@@ -85,6 +99,10 @@ class Process:
         history = ytmusic.get_history()
         total = len(history)
         i = 0
+        cursor = self.conn.cursor()
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        last_week = (datetime.now() - timedelta(weeks=1)
+                     ).strftime('%Y-%m-%d %H:%M:%S')
         for item in history:
             i += 1
             print("Scrobbling " + str(i) + " songs of " + str(total))
@@ -94,6 +112,18 @@ class Process:
                 "ts": self.formatted_date,
                 "albumName": item["album"]["name"] if "album" in item and item["album"] is not None else None,
             }
+            if record["albumName"] is None:
+                record["albumName"] = record["trackName"]
+            scroble = cursor.execute(
+                'SELECT * FROM scrobbles WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName AND scrobbled_at BETWEEN :last_week AND :now', {
+                    "trackName": record["trackName"],
+                    "artistName": record["artistName"],
+                    "albumName": record["albumName"],
+                    "last_week": last_week,
+                    "now": now
+                }).fetchone()
+            if scroble:
+                continue
             resp = lastpy.scrobble(
                 record["trackName"],
                 record["artistName"],
@@ -101,6 +131,13 @@ class Process:
                 self.session
             )
             print(resp)
+            cursor.execute('''
+                INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at)
+                VALUES (:trackName, :artistName, :albumName, :ts)
+            ''', record)
+            self.conn.commit()
+        cursor.close()
+        self.conn.close()
 
 
 if __name__ == '__main__':
