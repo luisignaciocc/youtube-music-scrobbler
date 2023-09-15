@@ -45,6 +45,8 @@ class Process:
 
         self.formatted_date = datetime.now().strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.yesterday = (datetime.now() - timedelta(days=1)
+                          ).strftime('%Y-%m-%d %H:%M:%S')
         self.conn = sqlite3.connect('./data.db')
         cursor = self.conn.cursor()
         cursor.execute('''
@@ -56,6 +58,11 @@ class Process:
                 scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        self.conn.commit()
+        # Delete old records on scrobbles
+        cursor.execute('''
+            DELETE FROM scrobbles WHERE scrobbled_at < :yesterday
+        ''', {"yesterday": self.yesterday})
         self.conn.commit()
         cursor.close()
 
@@ -97,8 +104,6 @@ class Process:
         history = ytmusic.get_history()
         i = 0
         cursor = self.conn.cursor()
-        yesterday = (datetime.now() - timedelta(days=1)
-                     ).strftime('%Y-%m-%d %H:%M:%S')
         for item in history:
             if item["played"] == "Today":
                 record = {
@@ -114,7 +119,7 @@ class Process:
                         "trackName": record["trackName"],
                         "artistName": record["artistName"],
                         "albumName": record["albumName"],
-                        "yesterday": yesterday
+                        "yesterday": self.yesterday
                     }).fetchone()
                 if scroble:
                     continue
