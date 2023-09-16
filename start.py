@@ -45,8 +45,6 @@ class Process:
 
         self.formatted_date = datetime.now().strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ")
-        self.yesterday = (datetime.now() - timedelta(days=1)
-                          ).strftime('%Y-%m-%d %H:%M:%S')
         self.conn = sqlite3.connect('./data.db')
         cursor = self.conn.cursor()
         cursor.execute('''
@@ -59,10 +57,11 @@ class Process:
             )
         ''')
         self.conn.commit()
-        # Delete old records on scrobbles
+        yesterday = (datetime.now() - timedelta(days=1)
+                     ).strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute('''
             DELETE FROM scrobbles WHERE scrobbled_at < :yesterday
-        ''', {"yesterday": self.yesterday})
+        ''', {"yesterday": yesterday})
         self.conn.commit()
         cursor.close()
 
@@ -115,11 +114,10 @@ class Process:
                 if record["albumName"] is None:
                     record["albumName"] = record["trackName"]
                 scroble = cursor.execute(
-                    'SELECT * FROM scrobbles WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName AND scrobbled_at > :yesterday', {
+                    'SELECT * FROM scrobbles WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName', {
                         "trackName": record["trackName"],
                         "artistName": record["artistName"],
-                        "albumName": record["albumName"],
-                        "yesterday": self.yesterday
+                        "albumName": record["albumName"]
                     }).fetchone()
                 if scroble:
                     continue
