@@ -1,4 +1,4 @@
-# YTMUSIC LAST.FM SCROBBLER
+# YOUTUBE MUSIC LAST.FM SCROBBLER
 
 The YTMusic Last.fm Scrobbler is a Python script that allows you to fetch your YouTube Music listening history and scrobble it to Last.fm.
 
@@ -54,6 +54,18 @@ The program will begin retrieving your YouTube Music history and scrobbling the 
 ### Using SQLite for tracking scrobbled songs
 
 The YTMusic Last.fm Scrobbler uses a SQLite database to keep track of the songs that have already been scrobbled to Last.fm. This prevents the same songs from being repeatedly sent as scrobbles in subsequent runs of the script.
+
+## Deploy
+
+To deploy this script, it is important to consider that it requires an authorization flow through the browser. Since it's not possible to perform this process directly on a server, it is recommended to follow the following approach:
+
+1. Perform the initial execution of the script in your local environment. This will allow you to complete the authorization flow and establish the necessary sessions.
+
+2. After completing the authorization in your local environment, you will need to manually upload two files to the server where the project is located: `.env` and `oauth.json`. These files contain the required configurations and sessions for subsequent executions.
+
+3. Once the files are on the server, you can perform executions directly on it. The script will utilize the stored sessions in the loaded files to authorize and carry out its tasks.
+
+Please note that this approach ensures that subsequent executions can be performed directly on the server without the need to repeat the authorization flow.
 
 ## Contributions
 
