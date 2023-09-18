@@ -125,7 +125,8 @@ class Process:
                     record["trackName"],
                     record["artistName"],
                     record["albumName"],
-                    self.session
+                    self.session,
+                    str(int(time.time() - 30 - (i * 90)))
                 )
                 root = ET.fromstring(xml_response)
                 scrobbles = root.find('scrobbles')

@@ -38,12 +38,12 @@ def nowPlaying(song_name, artist_name, session_key):
     return apiResp.text
 
 
-def scrobble(song_name, artist_name, album_name, session_key):
+def scrobble(song_name, artist_name, album_name, session_key, timestamp=str(int(time.time() - 30))):
     # Currently this sort of cheats the timestamp protocol
     params = {
         'method': 'track.scrobble',
         'api_key': os.environ['LAST_FM_API'],
-        'timestamp': str(int(time.time() - 30)),
+        'timestamp': timestamp,
         'track': song_name,
         'artist': artist_name,
         'album': album_name,
