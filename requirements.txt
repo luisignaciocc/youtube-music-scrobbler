@@ -4,5 +4,5 @@ idna==3.4
 pysqlite3==0.5.1
 python-dotenv==1.0.0
 requests==2.31.0
-urllib3==2.0.4
+urllib3==2.0.6
 ytmusicapi==1.2.1
