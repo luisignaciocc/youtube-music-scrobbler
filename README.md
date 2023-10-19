@@ -1,6 +1,6 @@
 # YOUTUBE MUSIC LAST.FM SCROBBLER
 
-The YTMusic Last.fm Scrobbler is a Python script that allows you to fetch your YouTube Music listening history and scrobble it to Last.fm.
+The YTMusic Last.fm Scrobbler is a Python script that allows you to fetch your YouTube Music listening history from the last 24 hours and scrobble it to Last.fm.
 
 ## Installation
 
