@@ -111,7 +111,7 @@ class Process:
                     "ts": self.formatted_date,
                     "albumName": item["album"]["name"] if "album" in item and item["album"] is not None else None,
                 }
-                if record["trackName"].endswith(" - Topic"):
+                if record["artistName"].endswith(" - Topic"):
                     continue
                 if record["albumName"] is None:
                     record["albumName"] = record["trackName"]
