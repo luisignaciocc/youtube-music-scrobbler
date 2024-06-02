@@ -35,8 +35,8 @@ Follow the instructions to complete the authentication. This will create an `oau
 7. Create a `.env` file in the project's root directory and add the following information:
 
 ```
-LASTFM_API_KEY=YOUR_LASTFM_API_KEY
-LASTFM_API_SECRET=YOUR_LASTFM_API_SECRET
+LAST_FM_API=YOUR_LASTFM_API_KEY
+LAST_FM_API_SECRET=YOUR_LASTFM_API_SECRET
 ```
 
 Replace `YOUR_LASTFM_API_KEY` with the API key you obtained from Last.fm and `YOUR_LASTFM_API_SECRET` with the corresponding API secret.
