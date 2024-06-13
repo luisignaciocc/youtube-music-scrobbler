@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-
 class TokenHandler(http.server.SimpleHTTPRequestHandler):
     def do_get_token(self):
         self.send_response(200)
@@ -30,10 +29,8 @@ class TokenHandler(http.server.SimpleHTTPRequestHandler):
         else:
             http.server.SimpleHTTPRequestHandler.do_GET(self)
 
-
 class TokenServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     token = None
-
 
 class Process:
     def __init__(self):
@@ -57,12 +54,6 @@ class Process:
                 array_position INTEGER
             )
         ''')
-        self.conn.commit()
-        yesterday = (datetime.now() - timedelta(days=1)
-                     ).strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute('''
-            DELETE FROM scrobbles WHERE scrobbled_at < :yesterday
-        ''', {"yesterday": yesterday})
         self.conn.commit()
         cursor.close()
 
@@ -132,7 +123,7 @@ class Process:
                         VALUES (:trackName, :artistName, :albumName, :ts, :arrayPosition)
                     ''', record)
                     self.conn.commit()
-                    print(f"Inserted new scrobble for {record['trackName']} by {record['artistName']}.")
+                    print(f"NEW: Scrobble for {record['trackName']} by {record['artistName']}.")
                 elif scroble[5] > record["arrayPosition"]:
                     # Existing record found and needs to be updated
                     cursor.execute('''
@@ -141,9 +132,15 @@ class Process:
                         WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName
                     ''', record)
                     self.conn.commit()
-                    print(f"Updated scrobble for {record['trackName']} by {record['artistName']} with new array position.")
+                    print(f"UPDATE: Update scrobble for {record['trackName']} by {record['artistName']} with new array position (new listen).")
                 else:
-                    # Existing record found and no update is needed
+                    # Existing record found that won't be sent to Last.FM, but local records needs updating
+                    cursor.execute('''
+                        UPDATE scrobbles
+                        SET scrobbled_at = :ts, array_position = :arrayPosition
+                        WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName
+                    ''', record)
+                    self.conn.commit()
                     continue
                 
                 xml_response = lastpy.scrobble(
@@ -167,7 +164,6 @@ class Process:
 
         cursor.close()
         self.conn.close()
-
 
 if __name__ == '__main__':
     Process().execute()
