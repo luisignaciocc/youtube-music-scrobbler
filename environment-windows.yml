@@ -1,0 +1,25 @@
+name: ytmusic-scrobbler
+channels:
+  - defaults
+dependencies:
+  - ca-certificates
+  - libffi
+  - openssl
+  - pip
+  - python=3.9
+  - pyreadline
+  - setuptools
+  - sqlite
+  - tk
+  - tzdata
+  - wheel
+  - xz
+  - zlib
+  - pip:
+      - certifi==2023.7.22
+      - charset-normalizer==3.2.0
+      - idna==3.4
+      - python-dotenv==1.0.0
+      - requests==2.31.0
+      - urllib3==2.0.4
+      - ytmusicapi==1.2.1
