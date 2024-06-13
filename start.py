@@ -53,7 +53,8 @@ class Process:
                 track_name TEXT,
                 artist_name TEXT,
                 album_name TEXT,
-                scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP
+                scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                array_position INTEGER
             )
         ''')
         self.conn.commit()
@@ -103,26 +104,48 @@ class Process:
         history = ytmusic.get_history()
         i = 0
         cursor = self.conn.cursor()
-        for item in history:
+        for index, item in enumerate(history):
             if item["played"] == "Today":
                 record = {
                     "artistName": item["artists"][0]["name"],
                     "trackName": item["title"],
                     "ts": self.formatted_date,
                     "albumName": item["album"]["name"] if "album" in item and item["album"] is not None else None,
+                    "arrayPosition": index,
                 }
                 if record["artistName"].endswith(" - Topic"):
                     continue
                 if record["albumName"] is None:
                     record["albumName"] = record["trackName"]
+                
                 scroble = cursor.execute(
                     'SELECT * FROM scrobbles WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName', {
                         "trackName": record["trackName"],
                         "artistName": record["artistName"],
                         "albumName": record["albumName"]
                     }).fetchone()
-                if scroble:
+                
+                if scroble is None:
+                    # No existing record, insert a new one
+                    cursor.execute('''
+                        INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at, array_position)
+                        VALUES (:trackName, :artistName, :albumName, :ts, :arrayPosition)
+                    ''', record)
+                    self.conn.commit()
+                    print(f"Inserted new scrobble for {record['trackName']} by {record['artistName']}.")
+                elif scroble[5] > record["arrayPosition"]:
+                    # Existing record found and needs to be updated
+                    cursor.execute('''
+                        UPDATE scrobbles
+                        SET scrobbled_at = :ts, array_position = :arrayPosition
+                        WHERE track_name = :trackName AND artist_name = :artistName AND album_name = :albumName
+                    ''', record)
+                    self.conn.commit()
+                    print(f"Updated scrobble for {record['trackName']} by {record['artistName']} with new array position.")
+                else:
+                    # Existing record found and no update is needed
                     continue
+                
                 xml_response = lastpy.scrobble(
                     record["trackName"],
                     record["artistName"],
@@ -135,17 +158,12 @@ class Process:
                 accepted = scrobbles.get('accepted')
                 ignored = scrobbles.get('ignored')
                 if accepted == '0' and ignored == '1':
-                    print("Error scrobbling " + record["trackName"] +
-                          " by " + record["artistName"] + ".")
+                    print(f"Error scrobbling {record['trackName']} by {record['artistName']}.")
                     print(xml_response)
                 else:
-                    cursor.execute('''
-                        INSERT INTO scrobbles (track_name, artist_name, album_name, scrobbled_at)
-                        VALUES (:trackName, :artistName, :albumName, :ts)
-                    ''', record)
-                    self.conn.commit()
                     i += 1
-        print("Scrobbled " + str(i) + " songs")
+
+        print(f"Scrobbled {i} songs")
 
         cursor.close()
         self.conn.close()
