@@ -95,6 +95,41 @@ class Process:
         history = ytmusic.get_history()
         i = 0
         cursor = self.conn.cursor()
+        
+        # Performing scrobbling of songs, cleaning up local DB if needed first, then adding/updating records to local DB and Last.FM
+        # Step 1: Collect all today's scrobbles
+        today_records = []
+
+        for index, item in enumerate(history):
+            if item["played"] == "Today":
+                record = {
+                    "artistName": item["artists"][0]["name"],
+                    "trackName": item["title"],
+                    "ts": self.formatted_date,
+                    "albumName": item["album"]["name"] if "album" in item and item["album"] is not None else None,
+                    "arrayPosition": index,
+                }
+                if record["artistName"].endswith(" - Topic"):
+                    continue
+                if record["albumName"] is None:
+                    record["albumName"] = record["trackName"]
+                
+                today_records.append((record["trackName"], record["artistName"], record["albumName"]))
+
+        # Step 2: Delete all records in the database that are not in today's scrobbles
+        if today_records:
+            placeholders = ', '.join(['(?, ?, ?)'] * len(today_records))
+            flat_today_records = [item for sublist in today_records for item in sublist]
+            cursor.execute(f'''
+                DELETE FROM scrobbles 
+                WHERE (track_name, artist_name, album_name) NOT IN (
+                    {placeholders}
+                )
+            ''', flat_today_records)
+            self.conn.commit()
+
+        # Step 3: Insert or update today's scrobbles
+        i = 0  # Initialize i for scrobble timing
         for index, item in enumerate(history):
             if item["played"] == "Today":
                 record = {
