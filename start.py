@@ -86,11 +86,14 @@ class Process:
             raise Exception(e)
 
     def execute(self):
-        ytmusic = YTMusic("browser.json")
+        ytmusic = YTMusic("oauth.json")
 
         if not self.session:
             token = self.get_token()
             self.session = self.get_session(token)
+        search_results = ytmusic.search("Oasis Wonderwall")
+        print(search_results)
+        return
         print("Getting history...")
         history = ytmusic.get_history()
         i = 0
