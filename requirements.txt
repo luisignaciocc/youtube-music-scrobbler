@@ -4,5 +4,5 @@ idna==3.7
 pysqlite3==0.5.1
 python-dotenv==1.0.0
 requests==2.32.0
-urllib3==2.2.2
+urllib3==2.5.0
 ytmusicapi @ git+https://github.com/sigma67/ytmusicapi.git@0d39603ba50744a6695c83368c267e300746dc4d
