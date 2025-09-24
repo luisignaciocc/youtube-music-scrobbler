@@ -319,14 +319,14 @@ class PositionTracker:
                         'reason': 'new_song',
                         'should_scrobble': True
                     })
-                elif current_position < saved_song.get('max_array_position', float('inf')):
-                    # Re-reproduction - song moved up in the list
+                elif current_position < saved_song.get('array_position', float('inf')):
+                    # Re-reproduction - song moved up in the list (better position than previous session)
                     songs_to_scrobble.append({
                         'song': song,
                         'position': current_position,
                         'reason': 'reproduction',
                         'should_scrobble': True,
-                        'previous_max_position': saved_song.get('max_array_position')
+                        'previous_position': saved_song.get('array_position')
                     })
                 else:
                     # Song exists and hasn't moved up - just update position
