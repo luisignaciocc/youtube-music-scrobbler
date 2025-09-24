@@ -1,98 +1,280 @@
 # YOUTUBE MUSIC LAST.FM SCROBBLER
 
-The YTMusic Last.fm Scrobbler is a Python script that allows you to fetch your YouTube Music listening history from the last 24 hours and scrobble it to Last.fm.
+The YouTube Music Last.fm Scrobbler is a Python application that fetches your YouTube Music listening history from the last 24 hours and scrobbles it to Last.fm. This project offers two versions with different approaches and capabilities.
 
-## Installation
+## 📋 Available Versions
 
-1. Clone or download the repository to your local machine.
+| Version | File | Approach | Best For |
+|---------|------|----------|----------|
+| **🌟 Standalone** | `start_standalone.py` | Direct HTML scraping | **Recommended** - More reliable, multilingual, smarter |
+| **Legacy** | `start.py` | YTMusic API | Simple setup, backward compatibility |
 
-2. We recommend using conda for managing the Python environment. Install Conda by following the instructions on the official Conda website: [Conda Installation](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) (You can also use another environment manager).
+---
 
-3. Create a new Conda environment using the provided `environment.yml` file:
+## 🚀 Quick Start (Standalone Version - Recommended)
 
-```bash
-conda env create -f environment.yml
-```
+### Prerequisites
 
-This will create a new Conda environment named `ytmusic-scrobbler` with all the necessary dependencies.
+1. Install Python 3.8+ and dependencies:
+   ```bash
+   # Using conda (recommended)
+   conda env create -f environment.yml
+   conda activate ytmusic-scrobbler
+   
+   # OR using pip
+   pip install -r requirements.txt
+   ```
 
-4. Activate the Conda environment:
+2. Get your Last.fm API credentials from [Last.fm API](https://www.last.fm/api/account/create)
 
-```bash
-conda activate ytmusic-scrobbler
-```
+3. Create a `.env` file:
+   ```bash
+   LAST_FM_API=your_lastfm_api_key
+   LAST_FM_API_SECRET=your_lastfm_api_secret
+   ```
 
-5. Run the following command to authenticate with YTMusic, following [these instructions](https://ytmusicapi.readthedocs.io/en/stable/setup/browser.html):
-
-```bash
-ytmusicapi browser
-```
-
-Follow the instructions to complete the authentication. This will create an `browser.json` file in the current directory.
-
-6. Create an API key and API secret for Last.fm by following this link: [Create an API key and API secret for Last.fm](https://www.last.fm/api/account/create).
-
-7. Create a `.env` file in the project's root directory and add the following information:
-
-```
-LAST_FM_API=YOUR_LASTFM_API_KEY
-LAST_FM_API_SECRET=YOUR_LASTFM_API_SECRET
-```
-
-Replace `YOUR_LASTFM_API_KEY` with the API key you obtained from Last.fm and `YOUR_LASTFM_API_SECRET` with the corresponding API secret.
-
-8. Run the following command to start scrobbling your YouTube Music history to Last.fm:
+### Run Standalone Version
 
 ```bash
-python start.py
+python start_standalone.py
 ```
 
-The first time you run the script, it will start a web server and open a browser window for you to authenticate with Last.fm and grant access to the application. Once you have completed the authentication, a new entry will be added to the `.env` file called `LASTFM_SESSION`. This session token does not expire, and in subsequent runs of the script, you will not be prompted for authentication again or have the web server started.
+On first run, you'll be prompted to:
+1. **Authenticate with Last.fm** (browser will open automatically)  
+2. **Provide your YouTube Music cookie** (detailed instructions provided)
 
-The program will begin retrieving your YouTube Music history and scrobbling the tracks played on the same day you execute the script to Last.fm. It's important to note that a maximum of 200 records can be fetched from the history. Additionally, due to YouTube Music's limitation of not providing individual song playback timestamps, the timestamp of when the script is executed will be assigned to all the songs.
+**To get your YouTube Music cookie:**
+1. Go to [https://music.youtube.com](https://music.youtube.com) in your browser
+2. Open Developer Tools (F12) → Network tab  
+3. Refresh the page and find any `music.youtube.com` request
+4. Copy the complete `Cookie` header value
+5. Paste when prompted (or save to `.env` as `YTMUSIC_COOKIE`)
 
-### Using SQLite for tracking scrobbled songs
+---
 
-The YTMusic Last.fm Scrobbler uses a SQLite database to keep track of the songs that have already been scrobbled to Last.fm. This prevents the same songs from being repeatedly sent as scrobbles in subsequent runs of the script.
+## 🔧 Legacy Version Setup
 
-## Deploy
+If you prefer the original YTMusic API approach:
 
-To deploy this script, it is important to consider that it requires an authorization flow through the browser. Since it's not possible to perform this process directly on a server, it is recommended to follow the following approach:
+### Additional Setup for Legacy Version
 
-1. Perform the initial execution of the script in your local environment. This will allow you to complete the authorization flow and establish the necessary sessions.
+1. Install ytmusicapi and authenticate:
+   ```bash
+   pip install ytmusicapi==1.10.3
+   ytmusicapi browser
+   ```
+   
+2. Follow the [ytmusicapi browser authentication](https://ytmusicapi.readthedocs.io/en/stable/setup/browser.html) instructions to create `browser.json`
 
-2. After completing the authorization in your local environment, you will need to manually upload two files to the server where the project is located: `.env` and `oauth.json`. These files contain the required configurations and sessions for subsequent executions.
+3. Run the legacy version:
+   ```bash
+   python start.py
+   ```
 
-3. Once the files are on the server, you can perform executions directly on it. The script will utilize the stored sessions in the loaded files to authorize and carry out its tasks.
+---
 
-Please note that this approach ensures that subsequent executions can be performed directly on the server without the need to repeat the authorization flow.
+## 📊 Version Comparison
 
-## Contributions
+### 🌟 Standalone Version (`start_standalone.py`)
 
-Contributions are welcome. If you would like to make improvements to the project, follow these steps:
+**✅ Advantages:**
+- **No API dependencies** - Direct HTML scraping eliminates API rate limits
+- **Multilingual support** - Detects "Today" in 50+ languages (English, Spanish, Chinese, Russian, Arabic, etc.)
+- **Smart timestamp distribution**:
+  - First-time users: Logarithmic over 24 hours
+  - Regular users: Logarithmic over 1 hour
+  - Pro users: Linear over 5 minutes
+- **Better duplicate detection** - Tracks re-reproductions and position changes
+- **Robust error handling** - Categorizes and handles different error types
+- **Enhanced logging** - Better visibility into processing and language detection
+- **No browser.json needed** - Just requires your browser cookie
 
-1. Fork the repository.
+**⚠️ Considerations:**
+- Requires copying cookie from browser (but provides detailed instructions)
+- Cookie needs periodic refresh (browser will notify when needed)
 
-2. Create a new branch for your feature or improvement:
+### 📜 Legacy Version (`start.py`)
 
+**✅ Advantages:**
+- **Simple setup** - Uses YTMusic API with `browser.json`
+- **Established approach** - Original working implementation
+- **No cookie handling** - API-based authentication
+
+**⚠️ Limitations:**
+- **API dependency** - Subject to rate limits and API changes
+- **English-only date detection** - Only recognizes "Today" in English
+- **Fixed timestamp intervals** - Simple 90-second spacing
+- **Basic error handling** - Limited error categorization
+- **Requires ytmusicapi** - Additional dependency for API access
+
+---
+
+## 🗄️ Database Schema
+
+Both versions use SQLite to track scrobbled songs and prevent duplicates:
+
+### Standalone Version Schema
+```sql
+CREATE TABLE scrobbles (
+    id INTEGER PRIMARY KEY,
+    track_name TEXT,
+    artist_name TEXT,
+    album_name TEXT,
+    scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    array_position INTEGER,
+    max_array_position INTEGER,          -- NEW: Tracks highest position
+    is_first_time_scrobble BOOLEAN       -- NEW: First-time user flag
+)
+```
+
+### Legacy Version Schema
+```sql
+CREATE TABLE scrobbles (
+    id INTEGER PRIMARY KEY,
+    track_name TEXT,
+    artist_name TEXT,  
+    album_name TEXT,
+    scrobbled_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    array_position INTEGER
+)
+```
+
+---
+
+## 📝 How It Works
+
+### Standalone Version Process
+1. **Fetches YouTube Music history page** directly via HTTP
+2. **Extracts embedded JSON data** from HTML using regex parsing
+3. **Detects today's songs** using multilingual date detection (50+ languages)
+4. **Smart position tracking** - Identifies new songs and re-reproductions
+5. **Calculates intelligent timestamps** - Different strategies for different user types
+6. **Scrobbles to Last.fm** with proper error handling and retry logic
+7. **Updates database** with enhanced tracking information
+
+### Legacy Version Process  
+1. **Uses YTMusic API** to fetch history data
+2. **Filters "Today" songs** (English only)
+3. **Simple duplicate prevention** based on position
+4. **Fixed timestamp intervals** (90 seconds apart)
+5. **Basic scrobbling** to Last.fm
+6. **Database updates** with basic tracking
+
+---
+
+## 🌍 Multilingual Support (Standalone Only)
+
+The standalone version automatically detects "Today" in these language families:
+
+- **Latin**: English, Spanish, Portuguese, Italian, French, German, Dutch, etc.
+- **Cyrillic**: Russian, Ukrainian, Bulgarian, Serbian, etc.
+- **Arabic**: Arabic, Persian, Urdu
+- **CJK**: Chinese (Simplified/Traditional), Japanese, Korean
+- **Indic**: Hindi, Bengali, Tamil, Telugu, etc.
+- **Southeast Asian**: Thai, Vietnamese, Indonesian, etc.
+- **Others**: Hebrew, Georgian, Armenian, etc.
+
+---
+
+## 🚀 Migration from Legacy to Standalone
+
+1. **Stop using browser.json** - No longer needed
+2. **Get YouTube Music cookie** - Follow the instructions above  
+3. **Add to .env file**: `YTMUSIC_COOKIE=your_cookie_here`
+4. **Run standalone version**: `python start_standalone.py`
+5. **Database migration** - Automatic (new columns added seamlessly)
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
 ```bash
-git checkout -b feature/my-feature
+# Required for both versions
+LAST_FM_API=your_lastfm_api_key
+LAST_FM_API_SECRET=your_lastfm_api_secret
+
+# Added automatically after first run
+LASTFM_SESSION=your_session_token
+
+# Required for standalone version only  
+YTMUSIC_COOKIE=your_complete_browser_cookie
 ```
 
-3. Make your changes and commit them:
+### Files Used
+| File | Standalone | Legacy | Description |
+|------|------------|--------|-------------|
+| `.env` | ✅ Required | ✅ Required | API keys and tokens |
+| `browser.json` | ❌ Not needed | ✅ Required | YTMusic API auth |
+| `data.db` | ✅ Enhanced | ✅ Basic | SQLite tracking database |
 
-```bash
-git commit -m "Add my feature"
-```
+---
 
-4. Push your changes to your forked repository:
+## 🐛 Troubleshooting
 
-```bash
-git push origin feature/my-feature
-```
+### Common Issues - Standalone Version
 
-5. Open a pull request on the main repository.
+**❌ "Cookie is missing __Secure-3PAPISID"**
+- Ensure you copied the complete cookie from Developer Tools
+- Make sure you're logged into YouTube Music in the browser
 
-## License
+**❌ "Authentication failed"**  
+- Your cookie may have expired - get a fresh one from browser
+- Cookies typically last several hours to days
+
+**❌ "No songs played today"**
+- Check your YouTube Music language - multilingual detection should work
+- Report unknown date formats to help improve detection
+
+### Common Issues - Legacy Version
+
+**❌ "browser.json not found"**
+- Run `ytmusicapi browser` first to generate authentication
+
+**❌ "No results found"**  
+- YTMusic API response format may have changed
+- Check if ytmusicapi needs updating
+
+---
+
+## 📋 Deployment
+
+Both versions can be deployed to servers, but have different requirements:
+
+### Standalone Version Deployment
+1. Run locally first to complete Last.fm OAuth
+2. Copy `.env` file to server (includes `LASTFM_SESSION`)
+3. Set up cron job or scheduler:
+   ```bash
+   # Run daily at 23:59
+   59 23 * * * /path/to/python /path/to/start_standalone.py
+   ```
+
+### Legacy Version Deployment  
+1. Run locally first for Last.fm OAuth and YTMusic setup
+2. Copy `.env` and `browser.json` to server
+3. Set up cron job with both files
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please focus improvements on the standalone version as it's the recommended approach.
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+---
+
+## 🎵 Enjoy Your Scrobbles!
+
+Whether you choose the standalone or legacy version, you'll be able to seamlessly sync your YouTube Music listening history with Last.fm. The standalone version is recommended for its reliability, multilingual support, and smart features, but both versions will get your music scrobbled! 🎶
