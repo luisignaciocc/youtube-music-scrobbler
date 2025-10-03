@@ -213,19 +213,46 @@ class SmartScrobbler:
                 last_fm_session_key,
                 timestamp
             )
-            
+
             # Parse XML response
             root = ET.fromstring(xml_response)
             scrobbles = root.find('scrobbles')
+
             if scrobbles is not None:
                 accepted = scrobbles.get('accepted', '0')
                 ignored = scrobbles.get('ignored', '0')
-                
-                # Return True if at least one scrobble was accepted
-                return accepted != '0' or ignored == '0'
-            
+
+                # Log detailed response for debugging
+                print(f"  [Last.fm Response] accepted={accepted}, ignored={ignored}")
+
+                # Parse individual scrobble details
+                scrobble_elements = scrobbles.findall('scrobble')
+                for scrobble in scrobble_elements:
+                    track_elem = scrobble.find('track')
+                    artist_elem = scrobble.find('artist')
+                    timestamp_elem = scrobble.find('timestamp')
+                    ignored_message = scrobble.find('ignoredMessage')
+
+                    track_corrected = track_elem.get('corrected', '0') if track_elem is not None else '0'
+                    artist_corrected = artist_elem.get('corrected', '0') if artist_elem is not None else '0'
+
+                    print(f"  [Scrobble Details]")
+                    print(f"    Track: {track_elem.text if track_elem is not None else 'N/A'} (corrected: {track_corrected})")
+                    print(f"    Artist: {artist_elem.text if artist_elem is not None else 'N/A'} (corrected: {artist_corrected})")
+                    print(f"    Timestamp: {timestamp_elem.text if timestamp_elem is not None else 'N/A'}")
+
+                    if ignored_message is not None and ignored_message.text:
+                        print(f"    ⚠️  Ignored: {ignored_message.text}")
+                        code = ignored_message.get('code', 'unknown')
+                        print(f"    Ignore code: {code}")
+
+                # Return True only if at least one scrobble was accepted
+                return int(accepted) > 0
+
+            print(f"  [Last.fm Response] No scrobbles element found in XML response")
+            print(f"  [Raw XML] {xml_response}")
             return False
-            
+
         except Exception as e:
             # Log the error but don't raise it - let caller handle it
             print(f"Scrobble error for '{song['title']}' by {song['artist']}: {str(e)}")
