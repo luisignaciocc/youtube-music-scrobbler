@@ -246,8 +246,8 @@ class SmartScrobbler:
                         code = ignored_message.get('code', 'unknown')
                         print(f"    Ignore code: {code}")
 
-                # Return True only if at least one scrobble was accepted
-                return int(accepted) > 0
+                # Return True if at least one scrobble was accepted (keeping original logic)
+                return accepted != '0' or ignored == '0'
 
             print(f"  [Last.fm Response] No scrobbles element found in XML response")
             print(f"  [Raw XML] {xml_response}")
