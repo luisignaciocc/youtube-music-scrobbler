@@ -1,0 +1,91 @@
+name: YouTube Music Scrobble Sync
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 30 minutes
+  push:
+    branches: [master] # Trigger on push to master and dev branches
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  scrobble:
+    runs-on: ubuntu-latest
+    environment: production # Binds to the 'production' environment for secrets and protection rules
+    outputs:
+      scrobble_log: ${{ steps.scrobbler.outputs.scrobble_log }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' # Or your preferred Python version (e.g., '3.8', '3.9', '3.10')
+          
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Cache scrobble database
+        uses: actions/cache@v3
+        with:
+          path: data.db
+          key: ${{ runner.os }}-scrobble-db-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ runner.os }}-scrobble-db-${{ github.run_id }}-
+            ${{ runner.os }}-scrobble-db-
+
+      - name: Run YouTube Music Scrobbler
+        id: scrobbler
+        env:
+          LAST_FM_API: ${{ secrets.LAST_FM_API }}
+          LAST_FM_API_SECRET: ${{ secrets.LAST_FM_API_SECRET }}
+          YTMUSIC_COOKIE: ${{ secrets.YTMUSIC_COOKIE }}
+          LASTFM_SESSION: ${{ secrets.LASTFM_SESSION }}
+        run: |
+          echo "Starting YouTube Music Scrobbler..."
+          output=$(python start_standalone.py)
+          echo "$output"
+          echo "scrobble_log<<EOF" >> $GITHUB_OUTPUT
+          echo "$output" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "YouTube Music Scrobbler finished."
+         
+  notify_failure:
+    needs: scrobble
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SCROBBLE_LOG: ${{ needs.scrobble.outputs.scrobble_log }}
+        run: |
+          pip install requests
+          python .github/scripts/send_failure_notification.py
+
+  notify_success:
+    needs: scrobble
+    runs-on: ubuntu-latest
+    if: success()
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SCROBBLE_LOG: ${{ needs.scrobble.outputs.scrobble_log }}
+        run: |
+          pip install requests
+          python .github/scripts/send_success_notification.py

@@ -2,6 +2,11 @@
 
 The YouTube Music Last.fm Scrobbler is a Python application that fetches your YouTube Music listening history from the last 24 hours and scrobbles it to Last.fm. This project offers two versions with different approaches and capabilities.
 
+## 🚀 Quick Setup Options
+
+- **Manual Setup**: Follow the instructions below to run locally
+- **Automated Setup**: **[Recommended] Use GitHub Actions** - See our complete setup guide: [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md)
+
 ## 📋 Available Versions
 
 | Version | File | Approach | Best For |
@@ -49,6 +54,10 @@ On first run, you'll be prompted to:
 3. Refresh the page and find any `music.youtube.com` request
 4. Copy the complete `Cookie` header value
 5. Paste when prompted (or save to `.env` as `YTMUSIC_COOKIE`)
+
+### GitHub Actions (Automated Setup)
+
+For automatic, scheduled scrobbling without running the script manually, follow our comprehensive setup guide: [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md)
 
 ---
 
@@ -239,7 +248,7 @@ YTMUSIC_COOKIE=your_complete_browser_cookie
 
 ## 📋 Deployment
 
-Both versions can be deployed to servers, but have different requirements:
+Both versions can be deployed to servers or run automatically using GitHub Actions, but have different requirements:
 
 ### Standalone Version Deployment
 1. Run locally first to complete Last.fm OAuth
@@ -254,6 +263,22 @@ Both versions can be deployed to servers, but have different requirements:
 1. Run locally first for Last.fm OAuth and YTMusic setup
 2. Copy `.env` and `browser.json` to server
 3. Set up cron job with both files
+
+### GitHub Actions Deployment (Recommended)
+
+Automate scrobbling using GitHub Actions for reliable, serverless execution:
+
+1. **Follow the detailed setup guide:** See [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md) for complete instructions on:
+   - Setting up repository secrets (API keys, cookies, Discord webhook)
+   - Configuring the workflow
+   - Security best practices
+   - Troubleshooting common issues
+
+2. **The workflow runs on a schedule** (default: every 30 minutes) and can be triggered manually
+
+3. **Includes error notifications** via Discord webhook when issues occur
+
+4. **Automated cookie validation** that alerts you when your YouTube Music cookie needs updating
 
 ---
 

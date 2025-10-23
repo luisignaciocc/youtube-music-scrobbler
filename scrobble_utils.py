@@ -91,7 +91,8 @@ class ErrorCategorizer:
         # Authentication errors
         if any(keyword in error_message for keyword in [
             "401", "UNAUTHENTICATED", "authentication credential",
-            "Headers.append", "invalid header value", "__Secure-3PAPISID"
+            "Headers.append", "invalid header value", "Authentication required",
+            "cookie appears to be expired", "login is required", "__Secure-3PAPISID"
         ]):
             return FailureType.AUTH
         
