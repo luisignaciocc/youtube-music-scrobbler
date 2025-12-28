@@ -4,3 +4,4 @@ idna==3.7
 pysqlite3==0.5.1
 python-dotenv==1.0.0
 urllib3==2.6.0
+requests==2.32.5

@@ -8,6 +8,7 @@ from typing import Dict, Set, List, Optional, NamedTuple
 class DateDetectionResult(NamedTuple):
     is_today: bool
     is_yesterday: bool
+    is_this_week: bool
     detected_language: Optional[str]
     original_value: str
 
@@ -149,6 +150,73 @@ YESTERDAY_TRANSLATIONS = {
     'երեկ': 'hy',           # Armenian
 }
 
+THIS_WEEK_TRANSLATIONS = {
+    # Latin script
+    'This week': 'en',         # English
+    'Esta semana': 'es',       # Spanish, Portuguese
+    'Questa settimana': 'it',  # Italian
+    'Cette semaine': 'fr',     # French
+    'Diese Woche': 'de',       # German
+    'Deze week': 'nl',         # Dutch
+    'Denna vecka': 'sv',       # Swedish
+    'Denne uken': 'no',        # Norwegian
+    'Tällä viikolla': 'fi',    # Finnish
+    'Šonedēļ': 'lv',           # Latvian
+    'Šią savaitę': 'lt',       # Lithuanian
+    'W tym tygodniu': 'pl',    # Polish
+    'Tento týden': 'cs',       # Czech
+    'Ta teden': 'sl',          # Slovenian
+    'Săptămâna aceasta': 'ro', # Romanian
+    'Sel nädalal': 'et',       # Estonian
+    'Bu hafta': 'tr',          # Turkish
+    'Αυτή την εβδομάδα': 'el', # Greek
+    'Тази седмица': 'bg',      # Bulgarian
+    'Ове недеље': 'sr',        # Serbian
+    'Ovaj tjedan': 'hr',       # Croatian
+    'Оваа недела': 'mk',       # Macedonian
+
+    # Cyrillic script
+    'На этой неделе': 'ru',    # Russian
+    'На цьому тижні': 'uk',    # Ukrainian
+    'На гэтым тыдні': 'be',    # Belarusian
+
+    # Arabic script
+    'هذا الأسبوع': 'ar',       # Arabic
+    'این هفته': 'fa',          # Persian/Farsi
+    'اس ہفتے': 'ur',           # Urdu
+
+    # CJK scripts
+    '本周': 'zh',               # Chinese Simplified
+    '今週': 'ja',               # Japanese
+    '이번 주': 'ko',            # Korean
+
+    # Indic scripts
+    'इस सप्ताह': 'hi',         # Hindi
+    'এই সপ্তাহ': 'bn',         # Bengali
+    'આ સપ્તાહ': 'gu',          # Gujarati
+    'இந்த வாரம்': 'ta',        # Tamil
+    'ఈ వారం': 'te',            # Telugu
+    'ಈ ವಾರ': 'kn',             # Kannada
+    'ഈ ആഴ്ച': 'ml',           # Malayalam
+    'ਇਹ ਹਫਤਾ': 'pa',          # Punjabi
+
+    # Southeast Asian
+    'สัปดาห์นี้': 'th',         # Thai
+    'Tuần này': 'vi',           # Vietnamese
+    'Minggu ini': 'id',         # Indonesian
+    'Linggong ito': 'tl',       # Filipino/Tagalog
+    'ယခုအပတ်': 'my',            # Burmese/Myanmar
+
+    # African languages
+    'Wiki hii': 'sw',           # Swahili
+    'Hierdie week': 'af',       # Afrikaans
+
+    # Other scripts
+    'השבוע': 'he',              # Hebrew
+    'ამ კვირაში': 'ka',          # Georgian
+    'այս շաբաթ': 'hy',           # Armenian
+}
+
 
 def detect_date_value(played_at: Optional[str]) -> DateDetectionResult:
     """
@@ -164,6 +232,7 @@ def detect_date_value(played_at: Optional[str]) -> DateDetectionResult:
         return DateDetectionResult(
             is_today=False,
             is_yesterday=False,
+            is_this_week=False,
             detected_language=None,
             original_value=played_at or ''
         )
@@ -175,6 +244,7 @@ def detect_date_value(played_at: Optional[str]) -> DateDetectionResult:
         return DateDetectionResult(
             is_today=True,
             is_yesterday=False,
+            is_this_week=False,
             detected_language=TODAY_TRANSLATIONS[trimmed],
             original_value=trimmed
         )
@@ -184,7 +254,18 @@ def detect_date_value(played_at: Optional[str]) -> DateDetectionResult:
         return DateDetectionResult(
             is_today=False,
             is_yesterday=True,
+            is_this_week=False,
             detected_language=YESTERDAY_TRANSLATIONS[trimmed],
+            original_value=trimmed
+        )
+    
+    # Check for this week
+    if trimmed in THIS_WEEK_TRANSLATIONS:
+        return DateDetectionResult(
+            is_today=False,
+            is_yesterday=False,
+            is_this_week=True,
+            detected_language=THIS_WEEK_TRANSLATIONS[trimmed],
             original_value=trimmed
         )
     
@@ -192,6 +273,7 @@ def detect_date_value(played_at: Optional[str]) -> DateDetectionResult:
     return DateDetectionResult(
         is_today=False,
         is_yesterday=False,
+        is_this_week=False,
         detected_language=None,
         original_value=trimmed
     )
@@ -206,6 +288,9 @@ def is_yesterday_song(played_at: Optional[str]) -> bool:
     """Check if a song was played yesterday"""
     return detect_date_value(played_at).is_yesterday
 
+def is_this_week_song(played_at: Optional[str]) -> bool:
+    """Check if a song was played this week"""
+    return detect_date_value(played_at).is_this_week
 
 def get_all_today_variants() -> List[str]:
     """Get all supported 'today' variants for debugging"""
@@ -215,6 +300,10 @@ def get_all_today_variants() -> List[str]:
 def get_all_yesterday_variants() -> List[str]:
     """Get all supported 'yesterday' variants for debugging"""
     return list(YESTERDAY_TRANSLATIONS.keys())
+
+def get_all_this_week_variants() -> List[str]:
+    """Get all supported 'this week' variants for debugging"""
+    return list(THIS_WEEK_TRANSLATIONS.keys())
 
 
 def get_unknown_date_values(songs: List[Dict[str, str]]) -> List[str]:
@@ -233,7 +322,7 @@ def get_unknown_date_values(songs: List[Dict[str, str]]) -> List[str]:
         played_at = song.get('playedAt')
         if played_at:
             result = detect_date_value(played_at)
-            if not result.is_today and not result.is_yesterday and played_at.strip():
+            if not result.is_today and not result.is_yesterday and not result.is_this_week and played_at.strip():
                 unknown_values.add(played_at.strip())
     
     return list(unknown_values)

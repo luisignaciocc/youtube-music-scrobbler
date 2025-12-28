@@ -230,15 +230,18 @@ class SmartScrobbler:
                 for scrobble in scrobble_elements:
                     track_elem = scrobble.find('track')
                     artist_elem = scrobble.find('artist')
+                    album_elem = scrobble.find('album')
                     timestamp_elem = scrobble.find('timestamp')
                     ignored_message = scrobble.find('ignoredMessage')
 
                     track_corrected = track_elem.get('corrected', '0') if track_elem is not None else '0'
                     artist_corrected = artist_elem.get('corrected', '0') if artist_elem is not None else '0'
+                    album_corrected = album_elem.get('corrected', '0') if album_elem is not None else '0'
 
                     print(f"  [Scrobble Details]")
                     print(f"    Track: {track_elem.text if track_elem is not None else 'N/A'} (corrected: {track_corrected})")
                     print(f"    Artist: {artist_elem.text if artist_elem is not None else 'N/A'} (corrected: {artist_corrected})")
+                    print(f"    Album: {album_elem.text if album_elem is not None else 'N/A'} (corrected: {album_corrected})")
                     print(f"    Timestamp: {timestamp_elem.text if timestamp_elem is not None else 'N/A'}")
 
                     if ignored_message is not None and ignored_message.text:
@@ -284,10 +287,28 @@ class PositionTracker:
     
     def __init__(self):
         pass
+
+    @staticmethod 
+    def deduplicate_songs(songs: List[Dict]) -> List[Dict]:
+        """Deduplicate songs accross today, yesterday, and this week.
+        This avoids rereproduction issues for overlaps.
+        Args:
+            songs: List of song dicts with 'title', 'artist', 'album' keys
+        Returns:
+            List of deduplicated song dicts
+        """
+        seen = set()
+        deduped = []
+        for song in songs:
+            key = (song['title'], song['artist'], song['album'])
+            if key not in seen:
+                deduped.append(song)
+                seen.add(key)
+        return deduped
     
     @staticmethod
     def detect_songs_to_scrobble(
-        today_songs: List[Dict[str, str]],
+        total_songs: List[Dict[str, str]],
         database_songs: List[Dict],
         is_first_time: bool = False,
         max_first_time_songs: int = 10
@@ -296,7 +317,7 @@ class PositionTracker:
         Determine which songs should be scrobbled based on position tracking
         
         Args:
-            today_songs: Songs from today's history (with position index)
+            total_songs: Songs from today's history (with position index)
             database_songs: Songs already in database with max_array_position
             is_first_time: Whether this is first time scrobbling for user
             max_first_time_songs: Maximum songs to scrobble for first-time users
@@ -308,7 +329,7 @@ class PositionTracker:
         
         if is_first_time:
             # First time: scrobble recent songs up to the limit
-            for i, song in enumerate(today_songs[:max_first_time_songs]):
+            for i, song in enumerate(total_songs[:max_first_time_songs]):
                 songs_to_scrobble.append({
                     'song': song,
                     'position': i + 1,
@@ -317,7 +338,7 @@ class PositionTracker:
                 })
             
             # Add remaining songs to database without scrobbling
-            for i, song in enumerate(today_songs[max_first_time_songs:], max_first_time_songs):
+            for i, song in enumerate(total_songs[max_first_time_songs:], max_first_time_songs):
                 songs_to_scrobble.append({
                     'song': song,
                     'position': i + 1,
@@ -326,7 +347,7 @@ class PositionTracker:
                 })
         else:
             # Regular processing: check for new songs and re-reproductions
-            for i, song in enumerate(today_songs):
+            for i, song in enumerate(total_songs):
                 current_position = i + 1
                 
                 # Find matching song in database

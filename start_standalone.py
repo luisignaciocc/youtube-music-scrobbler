@@ -22,7 +22,7 @@ from typing import List, Dict, Optional
 
 # Import our new modules
 from ytmusic_fetcher import get_ytmusic_history_from_cookie
-from date_detection import is_today_song, get_unknown_date_values, get_detected_languages
+from date_detection import is_today_song, is_yesterday_song, is_this_week_song, get_unknown_date_values, get_detected_languages
 from scrobble_utils import SmartScrobbler, PositionTracker, FailureType
 
 load_dotenv()
@@ -207,6 +207,13 @@ class ImprovedProcess:
         # Filter songs played today using multilingual detection
         print("Filtering songs played today...")
         today_songs = [song for song in history if is_today_song(song.get('playedAt'))]
+
+        print("Filtering songs played yesterday...")
+        yesterday_songs = [song for song in history if is_yesterday_song(song.get('playedAt'))]
+
+        print("Filtering songs played this week...")
+        # Filter this week songs using multilingual detection 
+        this_week_songs = [song for song in history if is_this_week_song(song.get('playedAt'))]
         
         # Log unknown date values for future expansion
         unknown_values = get_unknown_date_values(history)
@@ -220,10 +227,12 @@ class ImprovedProcess:
             print(f"Detected languages in today's songs: {', '.join(detected_languages)}")
 
         print(f"Found {len(today_songs)} songs played today")
+        print(f"Found {len(yesterday_songs)} songs played yesterday")
+        print(f"Found {len(this_week_songs)} songs played this week")
 
-        if len(today_songs) == 0:
-            print("No songs played today. Nothing to scrobble.")
-            return True
+        if len(today_songs) == 0 and len(yesterday_songs) == 0 and len(this_week_songs) == 0:
+            print("No songs found from today, yesterday, or this week. Nothing to scrobble.")
+            return True        
 
         # Get existing songs from database
         cursor = self.conn.cursor()
@@ -259,12 +268,24 @@ class ImprovedProcess:
                         today_song['album'] == db_song['album']):
                         found = True
                         break
+                for yesterday_song in yesterday_songs:
+                    if (yesterday_song['title'] == db_song['title'] and 
+                        yesterday_song['artist'] == db_song['artist'] and 
+                        yesterday_song['album'] == db_song['album']):
+                        found = True
+                        break
+                for this_week_song in this_week_songs:
+                    if (this_week_song['title'] == db_song['title'] and 
+                        this_week_song['artist'] == db_song['artist'] and 
+                        this_week_song['album'] == db_song['album']):
+                        found = True
+                        break
                 
                 if not found:
                     songs_to_delete.append(db_song)
             
             if songs_to_delete:
-                print(f"Removing {len(songs_to_delete)} songs no longer in today's history")
+                print(f"Removing {len(songs_to_delete)} songs no longer in today's, yesterday's, or this week's history")
                 for song in songs_to_delete:
                     cursor.execute('''
                         DELETE FROM scrobbles 
@@ -272,10 +293,11 @@ class ImprovedProcess:
                     ''', (song['title'], song['artist'], song['album']))
                 self.conn.commit()
 
+        all_songs = self.position_tracker.deduplicate_songs(today_songs + yesterday_songs + this_week_songs)
         # Determine which songs to scrobble using smart position tracking
         max_first_time_songs = 10  # Can be made configurable
         songs_to_process = self.position_tracker.detect_songs_to_scrobble(
-            today_songs, database_songs, is_first_time, max_first_time_songs
+            all_songs, database_songs, is_first_time, max_first_time_songs
         )
 
         # Count how many will actually be scrobbled
@@ -355,7 +377,7 @@ class ImprovedProcess:
 
         cursor.close()
         
-        print(f"\\n✅ Scrobbling completed!")
+        print(f"✅ Scrobbling completed!")
         print(f"📊 Summary:")
         print(f"  - Total songs in today's history: {len(today_songs)}")
         print(f"  - Songs successfully scrobbled: {songs_scrobbled}")
@@ -377,16 +399,16 @@ def main():
         success = process.execute()
         
         if success:
-            print("\\n🎉 Process completed successfully!")
+            print("🎉 Process completed successfully!")
         else:
-            print("\\n❌ Process failed. Please check the errors above.")
+            print("❌ Process failed. Please check the errors above.")
             return 1
             
     except KeyboardInterrupt:
-        print("\\n⏹️  Process interrupted by user")
+        print("⏹️  Process interrupted by user")
         return 1
     except Exception as e:
-        print(f"\\n💥 Unexpected error: {e}")
+        print(f"💥 Unexpected error: {e}")
         return 1
     
     return 0
